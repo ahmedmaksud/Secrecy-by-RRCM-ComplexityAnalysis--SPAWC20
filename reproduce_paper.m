@@ -1,5 +1,5 @@
 function reproduce_paper(varargin)
-% Regenerate the artifacts of Hua and Maksud, SPAWC 2020.
+% Regenerate the results of Hua and Maksud, "Unconditional Secrecy and Computational Complexity against Wireless Eavesdropping," SPAWC 2020.
 %
 %   reproduce_paper                      full run, all phases
 %   reproduce_paper('preset','smoke')    fast sanity run
@@ -7,14 +7,12 @@ function reproduce_paper(varargin)
 %   reproduce_paper('N',4,'workers',12)  attack size / pool size
 %
 % Two phases:
-%   'attack'  Eve's Gauss-Newton attack on RRCM (Section VI-A). Sweeps the
-%             reciprocity-noise level and counts how often the attack recovers
-%             the user's channel over RRR random trials. Uses attaack_B's model
-%             and solver (gen_Q_data / add_noise_b / SNS_B / my_quality_control).
-%   'fig1'    Figure 1: time for Eve's exhaustive search over a quantized
-%             9x1 channel, from the measured cost of one 3x3 SVD.
+%   'attack'  Eve's Gauss-Newton attack on RRCM (Section VI-A).
+%             Sweeps the reciprocity-noise level and counts how often the attack recovers the user's channel over RRR random trials.
+%             Uses attaack_B's model and solver (gen_Q_data / add_noise_b / SNS_B / my_quality_control).
+%   'fig1'    Figure 1: time for Eve's exhaustive search over a quantized 9x1 channel, from the measured cost of one 3x3 SVD.
 %
-% Results (tables, .mat, .png) are written to results/.
+% Results are written to results/.
 
 p = inputParser;
 p.addParameter('preset','full');
@@ -79,7 +77,7 @@ for ia = 1:numel(aalpha)
     alpha = aalpha(ia);
     mqc = zeros(1,5);
     parfor i = 1:RRR
-        rng(seed + ia*100003 + i);          % worker-count-independent trials
+        rng(seed + ia*100003 + i); % worker-count-independent trials
         Qdata = gen_Q_data(M,N,L,dataset_length);
         Q = Qdata(:,:,:,1:K);
         x = gen_x_data(N);
@@ -115,9 +113,8 @@ end
 % ---------------------------------------------------------------------------
 function run_fig1(opt, cfg, outdir)
 % Eve's exhaustive search: N_A = 9 (h is 9x1, H_s is 3x3), S0 = 9 samples.
-% With N_q quantization levels per real component there are N_q^(2*N_A) = N_q^18
-% candidate channels, each needing 9 SVDs of a 3x3 matrix. Time the 3x3 SVD,
-% then scale by N_q^18 as in the paper: T_{Nq} = (Nq/2)^18 * T_2.
+% With N_q quantization levels per real component there are N_q^(2*N_A) = N_q^18 candidate channels, each needing 9 SVDs of a 3x3 matrix.
+% Time the 3x3 SVD, then scale by N_q^18 as in the paper: T_{Nq} = (Nq/2)^18 * T_2.
 NA = 9;
 nsvd = cfg.nsvd;
 rng(opt.seed);
@@ -125,11 +122,11 @@ A = complex(randn(3,3,nsvd), randn(3,3,nsvd));
 t0 = tic;
 for k = 1:nsvd, s = svd(A(:,:,k)); end %#ok<NASGU>
 per_svd = toc(t0)/nsvd;
-T2 = NA * 2^(2*NA) * per_svd;          % s=1..9 over 2^18 realizations
+T2 = NA * 2^(2*NA) * per_svd; % s=1..9 over 2^18 realizations
 
 n = 3000; X = randn(n); Yb = randn(n);
 tm = tic; Z = X*Yb; %#ok<NASGU>
-gflops = (2*n^3)/toc(tm)/1e9;          % this machine, peak-ish
+gflops = (2*n^3)/toc(tm)/1e9; % this machine
 
 Nq = 2:8;
 scale = (Nq/2).^(2*NA);

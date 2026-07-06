@@ -2,44 +2,24 @@
 
 MATLAB code for the paper:
 
-> **Y. Hua and A. Maksud**, "Unconditional Secrecy and Computational Complexity against Wireless
-> Eavesdropping," in *Proc. IEEE 21st International Workshop on Signal Processing Advances in
-> Wireless Communications (SPAWC)*, Atlanta, GA, USA, 2020, pp. 1-5.
-> [[Reprint]](https://intra.ece.ucr.edu/~yhua/SPAWC_2020_Reprint.pdf)
+> **Y. Hua and A. Maksud**, "Unconditional Secrecy and Computational Complexity against Wireless Eavesdropping," in *Proc. IEEE 21st International Workshop on Signal Processing Advances in Wireless Communications (SPAWC)*, Atlanta, GA, USA, 2020, pp. 1-5. [[PDF]](https://intra.ece.ucr.edu/~yhua/SPAWC_2020_Reprint.pdf)
 
 ---
 
 ## Key result
 
-The paper quantifies the *unconditional secrecy* (UNS) of several classic physical-layer schemes
-and the extra computation an eavesdropper (Eve) needs to break secrecy beyond it. Conventional MIMO
-beamforming gives UNS of at most the entropy of `r = min(N_A, N_B)` symbols, a randomized MISO
-beamformer (`N_A > N_B = 1`) at most `N_A - 1` symbols, and the artificial-noise scheme zero UNS; in
-each case Eve's extra work is a linear algebra problem she can solve. **Randomized Reciprocal
-Channel Modulation (RRCM)** instead forces Eve to solve a *nonlinear* inverse problem for the user's
-channel, and the paper shows the cost of that problem grows fast enough to be infeasible.
+The paper quantifies the *unconditional secrecy* (UNS) of several classic physical-layer schemes and the extra computation an eavesdropper (Eve) needs to break secrecy beyond it. Conventional MIMO beamforming gives UNS of at most the entropy of `r = min(N_A, N_B)` symbols, a randomized MISO beamformer (`N_A > N_B = 1`) at most `N_A - 1` symbols, and the artificial-noise scheme zero UNS. In each case Eve's extra work is a linear algebra problem she can solve. **Randomized Reciprocal Channel Modulation (RRCM)** instead forces Eve to solve a *nonlinear* inverse problem for the user's channel, and the paper shows the cost of that problem grows fast enough to be infeasible.
 
 This repository holds the two simulations behind that claim:
 
-- **Eve's search cost (paper Fig. 1).** For a 9x1 channel (`N_A = 9`), Eve's exhaustive search over
-  a channel quantized to `N_q` levels per real component must evaluate `N_q^18` candidates, each a
-  3x3 SVD. Timing one 3x3 SVD on this machine gives `T_2 = 6.6 s` for the `N_q = 2` workload;
-  scaling by `(N_q/2)^18` and to the paper's reference machines reproduces Fig. 1: at `N_q = 8` the
-  search takes about `1.8e13 s` (~560,000 years) on the 11.1 Gflops PC and about `4e6 s` (~46 days)
-  on a 50 Pflops supercomputer.
-- **Eve's Gauss-Newton attack (§VI-A).** For a small channel (`N_A = 4`) Eve can instead try to
-  solve the nonlinear system directly. The reproduced sweep shows this works only when channel
-  reciprocity is nearly perfect: with reciprocity noise `sqrt(beta) = 0.03` Eve recovers the hidden
-  channel samples in **43 of 100** trials, but this collapses to **5 of 100** at `sqrt(beta) = 0.32`
-  and to essentially zero beyond, with over 90% of attempts failing to converge.
+- **Eve's Gauss-Newton attack (§VI-A).** For a small channel (`N_A = 4`) Eve can try to solve the nonlinear system directly. The reproduced sweep shows this works only when channel reciprocity is nearly perfect. With reciprocity noise `sqrt(beta) = 0.03` Eve recovers the hidden channel samples in **43 of 100** trials, but this collapses to **5 of 100** at `sqrt(beta) = 0.32` and to essentially zero beyond, with over 90% of attempts failing to converge.
+- **Eve's search cost (paper Fig. 1).** For a 9x1 channel (`N_A = 9`), Eve's exhaustive search over a channel quantized to `N_q` levels per real component must evaluate `N_q^18` candidates, each a 3x3 SVD. Timing one 3x3 SVD on this machine gives `T_2 = 6.6 s` for the `N_q = 2` workload; scaling by `(N_q/2)^18` and to the paper's reference machines reproduces Fig. 1: at `N_q = 8` the search takes about `1.8e13 s` (~560,000 years) on the 11.1 Gflops PC and about `4e6 s` (~46 days) on a 50 Pflops supercomputer.
 
 ---
 
 ## Overview
 
-Alice and Bob share a reciprocal wireless channel that Eve, at a different location, cannot observe.
-RRCM turns that shared channel into a one-time key. Let the user's reciprocal channel feature be a
-unit-norm vector
+Alice and Bob share a reciprocal wireless channel that Eve, at a different location, cannot observe. RRCM turns that shared channel into a one-time key. Let the user's reciprocal channel feature be a unit-norm vector
 
 $$ x \in \mathbb{R}^{N}, \qquad \lVert x \rVert = 1 . $$
 
@@ -47,33 +27,16 @@ Bob's estimate of the same channel is imperfect by a reciprocity-noise fraction 
 
 $$ x' = \sqrt{1-\beta}\, x + \sqrt{\beta}\, w, \qquad w \perp x, \quad \lVert w \rVert = 1 . $$
 
-Alice publicly transmits randomized projections of `x` through random orthonormal tensors
-`Q_1, ..., Q_K`. Each public sample is the dominant eigenvector of `M M^T` with
-`M = [Q_{k,1} x, ..., Q_{k,L} x]`. Bob, knowing his own `x'`, can line these up; Eve, who knows the
-public `Q_k` and the transmitted samples but not `x`, must invert a nonlinear map to recover the
-outer product `x x^T`. The paper's security argument is about how hard that inversion is.
+Alice publicly transmits randomized projections of `x` through random orthonormal tensors `Q_1, ..., Q_K`. Each public sample is the dominant eigenvector of `M M^T` with `M = [Q_{k,1} x, ..., Q_{k,L} x]`.
+Bob, knowing his own `x'`, can align them.
+Eve, who knows the public `Q_k` and the transmitted samples but not `x`, must invert a nonlinear map to recover the outer product `x x^T`. The paper's security argument is about how hard that inversion is.
 
 ## Method: Eve's attack (§VI-A)
 
-```
-  secret channel        public transform            Eve's problem
-  ----------------      -----------------           -----------------------------
-  x  (unit norm)  --->  Q_1..Q_K (random)  --->  Y   observe Y, Q ; unknown x
-       |                                              |
-       |  reciprocity noise beta                      |  Gauss-Newton on x-bar = x x^T
-       v                                              v
-  x' (Bob's copy)                                 x-hat  ->  matches known samples?
-                                                             recovers hidden samples? (break)
-```
-
 1. Draw the secret `x` and the public tensors `Q_k`; form the public samples `Y = get_y(Q, x)`.
-2. Seed Eve with the degraded outer product built from a noisy `x'` (`get_xbar_prime_from_xprime`).
-3. Iterate the damped Gauss-Newton step (`SNS_B`), which linearizes the RRCM equations each step
-   (`make_AaBb_algoB` assembling `make_Ax` / `make_Ay` / `make_Az`) and updates the estimate
-   `x-hat <- x-hat - eta (B^T B)^{-1} B^T A (y_known - a)` until the residual on the known samples
-   falls below `tol` or `my_iter` iterations pass.
-4. Score the recovered `x-hat` (`my_quality_control`): did it match the *known* samples, and did it
-   also predict the *hidden* samples (a genuine break)?
+2. Provide Eve with the degraded outer product built from a noisy `x'` (`get_xbar_prime_from_xprime`).
+3. Iterate the Gauss-Newton step (`SNS_B`), which linearizes the RRCM equations each step (`make_AaBb_algoB` assembling `make_Ax` / `make_Ay` / `make_Az`) and updates the estimate `x-hat <- x-hat - eta (B^T B)^{-1} B^T A (y_known - a)` until the residual on the known samples falls below `tol` or `my_iter` iterations pass.
+4. Score the recovered `x-hat` (`my_quality_control`): did it match the *known* samples, and did it also predict the *hidden* samples (a genuine break)?
 
 Repeating this over `RRR` trials at each reciprocity-noise level gives the attack-success curve.
 
@@ -82,16 +45,11 @@ Repeating this over `RRR` trials at each reciprocity-noise level gives the attac
 **Paper Fig. 1: Eve's exhaustive-search cost.**
 
 <p align="center"><img src="results/fig1_exhaustive_time.png" width="560"></p>
-<p align="center"><sub>Time for Eve's exhaustive search over a quantized 9x1 channel vs. the number
-of quantization levels, on an 11.1 Gflops PC and a 50 Pflops supercomputer, with 1 day / 1 year /
-1 decade references. Reconstructed from the measured cost of one 3x3 SVD.</sub></p>
+<p align="center"><sub>Time for Eve's exhaustive search over a quantized 9x1 channel vs. the number of quantization levels, on an 11.1 Gflops PC and a 50 Pflops supercomputer, with 1 day / 1 year / 1 decade references. Reconstructed from the measured cost of one 3x3 SVD.</sub></p>
 
 **§VI-A: Eve's Gauss-Newton attack (`N_A = 4`, 11 known samples, 100 trials per row).**
 
-Counts are out of 100 trials. `known_match` = Eve reproduces the samples she already sees;
-`hidden_break` = she also predicts the hidden samples (a genuine break); `not_converged` = the
-attack fails to settle. Full data (all five outcomes) in
-[`results/attack_table_N4.csv`](results/attack_table_N4.csv).
+Counts are out of 100 trials. `known_match` = Eve reproduces the samples she already sees; `hidden_break` = she also predicts the hidden samples (a genuine break); `not_converged` = the attack fails to settle. Full data (all five outcomes) in [`results/attack_table_N4.csv`](results/attack_table_N4.csv).
 
 | `sqrt_beta` | `beta` | `known_match` | `hidden_break` | `not_converged` |
 |------------:|-------:|--------------:|---------------:|----------------:|
@@ -108,22 +66,17 @@ attack fails to settle. Full data (all five outcomes) in
 | 0.949 | 0.9   | 2  | 1      | 98 |
 | 1.000 | 1.0   | 0  | 0      | 100 |
 
-Eve breaks RRCM only near perfect reciprocity: the break rate falls from 43% at `sqrt_beta = 0.03`
-to 5% at `0.32` and to essentially zero beyond, with over 90% of attempts failing to converge.
+Eve breaks RRCM only near perfect reciprocity. The break rate falls from 43% at `sqrt_beta = 0.03` to 5% at `0.32` and to essentially zero beyond, with over 90% of attempts failing to converge.
 
-Note on scope: the SPAWC paper contains one figure (Fig. 1) and reports the §VI-A attack results in
-the text. The attack code here is the generalized RRCM/CEF form (Eve recovers the rank-1 lift
-`x x^T` from `K` known samples), which is the computational ancestor of the paper's §VI-A Newton
-experiment rather than a byte-for-byte match of its specific `S_0 = 4` / `S_0 = 5` figures; the
-numbers above are grounded in this reproduction, not copied from the paper.
+Note on scope: the SPAWC paper contains one figure (Fig. 1) and reports the §VI-A attack results in the text. The attack code here is the generalized RRCM/CEF form (Eve recovers the rank-1 lift `x x^T` from `K` known samples).
 
 ## Repository structure
 
 ```
 .
-├── reproduce_paper.m     # unifying driver: attack sweep + Fig. 1 (new)
+├── reproduce_paper.m     # unifying driver: attack sweep + Fig. 1
 ├── results/              # generated tables (.mat) and figures (.png)
-├── attaack_B.m           # original attack-sweep script (N=4), unchanged
+├── attaack_B.m           # original attack-sweep script (N=4)
 ├── SNS_B.m               # Eve's Gauss-Newton solver
 ├── make_AaBb_algoB.m     # assemble the per-iteration linearized system ...
 ├── make_Ax.m  make_Ay.m  make_Az.m          # ... its three blocks
@@ -139,13 +92,9 @@ numbers above are grounded in this reproduction, not copied from the paper.
 └── my_beep.m
 ```
 
-The original `.m` files are unchanged; `reproduce_paper.m` reuses them and adds presets,
-parallelism, deterministic seeding, and headless plotting into `results/`.
-
 ## Reproducing
 
-Requires MATLAB (Parallel Computing Toolbox for `parfor`; Statistics Toolbox for `normrnd`). From
-the repo root:
+Requires MATLAB (Parallel Computing Toolbox for `parfor`; Statistics Toolbox for `normrnd`). From the repo root:
 
 ```matlab
 reproduce_paper                       % full run: attack sweep + Fig. 1
@@ -159,21 +108,20 @@ reproduce_paper('only','fig1')        % just Figure 1
 | `quick` | 20  | 6  | 2000 | 2^15 | ~1 min  |
 | `full`  | 100 | 12 | 7000 | 2^18 | minutes |
 
-Options: `'N',8` for the larger `N_A = 8` attack, `'workers',N` to size the pool, `'seed',S` for the
-base seed (trials are seeded per-trial, so results are identical regardless of worker count).
-Outputs land in `results/`: `attack_table_N4.csv` (+ `.mat`), `fig1_data.mat`, and
-`fig1_exhaustive_time.png`.
+Options: `'N',8` for the larger `N_A = 8` attack, `'workers',N` to size the pool, `'seed',S` for the base seed (trials are seeded per-trial, so results are identical regardless of worker count). Outputs land in `results/`: `attack_table_N4.csv` (+ `.mat`), `fig1_data.mat`, and `fig1_exhaustive_time.png`.
 
 ## Citation
 
 ```bibtex
-@inproceedings{hua2020unconditional,
-  author    = {Hua, Yingbo and Maksud, Ahmed},
-  title     = {Unconditional Secrecy and Computational Complexity against Wireless Eavesdropping},
-  booktitle = {Proc. IEEE 21st International Workshop on Signal Processing Advances in
-               Wireless Communications (SPAWC)},
-  address   = {Atlanta, GA, USA},
-  pages     = {1--5},
-  year      = {2020}
-}
+@INPROCEEDINGS{9154267,
+  author={Hua, Yingbo and Maksud, Ahmed},
+  booktitle={2020 IEEE 21st International Workshop on Signal Processing Advances in Wireless Communications (SPAWC)}, 
+  title={Unconditional Secrecy and Computational Complexity against Wireless Eavesdropping}, 
+  year={2020},
+  volume={},
+  number={},
+  pages={1-5},
+  keywords={Wireless communication;Physical layer;Computational complexity;Communication system security;Encryption;Antennas;Network security;end-to-end security;privacy;physical layer security;unconditional secrecy},
+  doi={10.1109/SPAWC48557.2020.9154267}}
+
 ```
