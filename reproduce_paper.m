@@ -53,6 +53,9 @@ switch lower(preset)
     case 'full'
         cfg.RRR = 100; cfg.beta = [0.001 0.01 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1];
         cfg.my_iter = 7000; cfg.nsvd = 2^18;
+    case 'deep'
+        cfg.RRR = 1750; cfg.beta = [0.001 0.01 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1];
+        cfg.my_iter = 7000; cfg.nsvd = 2^18;
     otherwise
         error('unknown preset %s', preset);
 end
@@ -152,7 +155,7 @@ grid on;
 xlabel('number of quantization levels  N_q','FontSize',13);
 ylabel('time required (s)','FontSize',13);
 legend('11.1 Gflops PC', '50 Pflops supercomputer', ...
-       sprintf('this machine (%.0f Gflops)',gflops), 'Location','northwest');
+       sprintf('this machine (%.0f Gflops)',gflops), 'Location','northwest', 'Box','off');
 title('Exhaustive search over a quantized 9x1 channel');
 exportgraphics(f, fullfile(outdir,'fig1_exhaustive_time.png'), 'Resolution',150);
 close(f);

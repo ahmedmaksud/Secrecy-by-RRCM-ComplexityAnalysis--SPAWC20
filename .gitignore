@@ -1,13 +1,4 @@
-# MATLAB root-level result tables — attaack_B.m saves convergence tables
-# (uniktable_*/viztable_*/...) into the repo root (its cwd). Regenerable, not source.
-# The reproduced artifacts under results/ are tracked (exception below).
-*.mat
-!results/*.mat
-*.fig
-*.asv
-*.slxc
 .DS_Store
-
-# Not part of the published code
 .claude/
 paper/
+parfor_progress.txt

@@ -12,8 +12,8 @@ The paper quantifies the *unconditional secrecy* (UNS) of several classic physic
 
 This repository holds the two simulations behind that claim:
 
-- **Eve's Gauss-Newton attack (§VI-A).** For a small channel (`N_A = 4`) Eve can try to solve the nonlinear system directly. The reproduced sweep shows this works only when channel reciprocity is nearly perfect. With reciprocity noise `sqrt(beta) = 0.03` Eve recovers the hidden channel samples in **43 of 100** trials, but this collapses to **5 of 100** at `sqrt(beta) = 0.32` and to essentially zero beyond, with over 90% of attempts failing to converge.
-- **Eve's search cost (paper Fig. 1).** For a 9x1 channel (`N_A = 9`), Eve's exhaustive search over a channel quantized to `N_q` levels per real component must evaluate `N_q^18` candidates, each a 3x3 SVD. Timing one 3x3 SVD on this machine gives `T_2 = 6.6 s` for the `N_q = 2` workload; scaling by `(N_q/2)^18` and to the paper's reference machines reproduces Fig. 1: at `N_q = 8` the search takes about `1.8e13 s` (~560,000 years) on the 11.1 Gflops PC and about `4e6 s` (~46 days) on a 50 Pflops supercomputer.
+- **Eve's Gauss-Newton attack (§VI-A).** For a small channel (`N_A = 4`) Eve can try to solve the nonlinear system directly. The reproduced sweep (1750 trials per noise level) shows this works only when channel reciprocity is nearly perfect. With reciprocity noise `sqrt(beta) = 0.03` Eve recovers the hidden channel samples in **44%** of trials, but this collapses to **5%** at `sqrt(beta) = 0.32` and to well under 1% beyond, with over 90% of attempts failing to converge.
+- **Eve's search cost (paper Fig. 1).** For a 9x1 channel (`N_A = 9`), Eve's exhaustive search over a channel quantized to `N_q` levels per real component must evaluate `N_q^18` candidates, each a 3x3 SVD. Timing one 3x3 SVD on this machine gives `T_2 = 6.8 s` for the `N_q = 2` workload; scaling by `(N_q/2)^18` and to the paper's reference machines reproduces Fig. 1: at `N_q = 8` the search takes about `1.8e13 s` (~580,000 years) on the 11.1 Gflops PC and about `4e6 s` (~47 days) on a 50 Pflops supercomputer.
 
 ---
 
@@ -47,26 +47,26 @@ Repeating this over `RRR` trials at each reciprocity-noise level gives the attac
 <p align="center"><img src="results/fig1_exhaustive_time.png" width="560"></p>
 <p align="center"><sub>Time for Eve's exhaustive search over a quantized 9x1 channel vs. the number of quantization levels, on an 11.1 Gflops PC and a 50 Pflops supercomputer, with 1 day / 1 year / 1 decade references. Reconstructed from the measured cost of one 3x3 SVD.</sub></p>
 
-**§VI-A: Eve's Gauss-Newton attack (`N_A = 4`, 11 known samples, 100 trials per row).**
+**§VI-A: Eve's Gauss-Newton attack (`N_A = 4`, 11 known samples, 1750 trials per row).**
 
-Counts are out of 100 trials. `known_match` = Eve reproduces the samples she already sees; `hidden_break` = she also predicts the hidden samples (a genuine break); `not_converged` = the attack fails to settle. Full data (all five outcomes) in [`results/attack_table_N4.csv`](results/attack_table_N4.csv).
+Values are percent of 1750 trials. `known_match` = Eve reproduces the samples she already sees; `hidden_break` = she also predicts the hidden samples (a genuine break); `not_converged` = the attack fails to settle. Raw counts for all five outcomes in [`results/attack_table_N4.csv`](results/attack_table_N4.csv).
 
-| `sqrt_beta` | `beta` | `known_match` | `hidden_break` | `not_converged` |
-|------------:|-------:|--------------:|---------------:|----------------:|
-| 0.032 | 0.001 | 56 | **43** | 41 |
-| 0.100 | 0.01  | 28 | **14** | 69 |
-| 0.316 | 0.1   | 7  | **5**  | 92 |
-| 0.447 | 0.2   | 7  | 2      | 93 |
-| 0.548 | 0.3   | 3  | 1      | 97 |
-| 0.632 | 0.4   | 2  | 1      | 98 |
-| 0.707 | 0.5   | 1  | 0      | 99 |
-| 0.775 | 0.6   | 2  | 1      | 98 |
-| 0.837 | 0.7   | 3  | 2      | 97 |
-| 0.894 | 0.8   | 2  | 0      | 98 |
-| 0.949 | 0.9   | 2  | 1      | 98 |
-| 1.000 | 1.0   | 0  | 0      | 100 |
+| `sqrt_beta` | `beta` | `known_match` % | `hidden_break` % | `not_converged` % |
+|------------:|-------:|----------------:|-----------------:|------------------:|
+| 0.032 | 0.001 | 55.3 | **43.9** | 38.7 |
+| 0.100 | 0.01  | 28.7 | **17.4** | 68.2 |
+| 0.316 | 0.1   | 8.1  | **4.8**  | 90.2 |
+| 0.447 | 0.2   | 4.9  | 2.2      | 94.7 |
+| 0.548 | 0.3   | 3.3  | 1.1      | 96.2 |
+| 0.632 | 0.4   | 2.5  | 1.2      | 97.2 |
+| 0.707 | 0.5   | 1.8  | 0.6      | 98.1 |
+| 0.775 | 0.6   | 1.3  | 0.8      | 98.6 |
+| 0.837 | 0.7   | 1.4  | 0.5      | 98.3 |
+| 0.894 | 0.8   | 1.1  | 0.3      | 98.6 |
+| 0.949 | 0.9   | 1.1  | 0.4      | 98.9 |
+| 1.000 | 1.0   | 1.1  | 0.4      | 98.9 |
 
-Eve breaks RRCM only near perfect reciprocity. The break rate falls from 43% at `sqrt_beta = 0.03` to 5% at `0.32` and to essentially zero beyond, with over 90% of attempts failing to converge.
+Eve breaks RRCM only near perfect reciprocity. The break rate falls from 44% at `sqrt_beta = 0.03` to 5% at `0.32` and to well under 1% beyond, with over 90% of attempts failing to converge.
 
 Note on scope: the SPAWC paper contains one figure (Fig. 1) and reports the §VI-A attack results in the text. The attack code here is the generalized RRCM/CEF form (Eve recovers the rank-1 lift `x x^T` from `K` known samples).
 
@@ -104,9 +104,10 @@ reproduce_paper('only','fig1')        % just Figure 1
 
 | Preset | Attack trials (RRR) | Noise levels | Newton iters | Fig. 1 SVDs timed | Runtime |
 |--------|--------------------:|-------------:|-------------:|------------------:|---------|
-| `smoke` | 3   | 3  | 500  | 2^12 | seconds |
-| `quick` | 20  | 6  | 2000 | 2^15 | ~1 min  |
-| `full`  | 100 | 12 | 7000 | 2^18 | minutes |
+| `smoke` | 3    | 3  | 500  | 2^12 | seconds |
+| `quick` | 20   | 6  | 2000 | 2^15 | ~1 min  |
+| `full`  | 100  | 12 | 7000 | 2^18 | ~14 min |
+| `deep`  | 1750 | 12 | 7000 | 2^18 | ~3.5 h  |
 
 Options: `'N',8` for the larger `N_A = 8` attack, `'workers',N` to size the pool, `'seed',S` for the base seed (trials are seeded per-trial, so results are identical regardless of worker count). Outputs land in `results/`: `attack_table_N4.csv` (+ `.mat`), `fig1_data.mat`, and `fig1_exhaustive_time.png`.
 
